@@ -49,21 +49,29 @@ jobs:
       if: env.ENABLE_LXC_DOCKER == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        wget https://github.com/fate-think/LXC-DOCKER-KernelSU_Action/releases/download/1.0.0/add-lxc-docker-custom.sh
-        chmod 755 add-lxc-docker-custom.sh
-        ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+        git clone -q --depth=1 https://github.com/tomxi1997/lxc-docker-support-for-android.git utils
+        if ! grep -q 'source "utils/Kconfig"' android-kernel/Kconfig; then
+          echo 'source "utils/Kconfig"' >> android-kernel/Kconfig
+        fi
+        if ! grep -q '^CONFIG_DOCKER=y$' android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}; then
+          echo "CONFIG_DOCKER=y" >> android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+        fi
+        if ! grep -q '^CONFIG_BINFMT_MISC=y$' android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}; then
+          echo "CONFIG_BINFMT_MISC=y" >> android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+        fi
+        sed -i '/CONFIG_ANDROID_PARANOID_NETWORK/d' android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
         echo "# CONFIG_ANDROID_PARANOID_NETWORK is not set" >> android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
 
     - name: 添加runc补丁
+      if: env.ENABLE_LXC_DOCKER == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        wget https://github.com/fate-think/LXC-DOCKER-KernelSU_Action/releases/download/1.0.0/runcpatch.sh
-        chmod a+x runcpatch.sh
+        chmod a+x utils/runcpatch.sh
         if [ -f android-kernel/kernel/cgroup.c ]; then
-        ./runcpatch.sh android-kernel/kernel/cgroup.c               
+        ./utils/runcpatch.sh android-kernel/kernel/cgroup.c               
         fi
         if [ -f android-kernel/kernel/cgroup/cgroup.c ]; then
-        ./runcpatch.sh android-kernel/kernel/cgroup/cgroup.c               
+        ./utils/runcpatch.sh android-kernel/kernel/cgroup/cgroup.c               
         fi
         
     - name: 配置 ksu
