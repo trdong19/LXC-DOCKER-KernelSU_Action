@@ -49,7 +49,7 @@ jobs:
       if: env.ENABLE_LXC_DOCKER == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        git clone -q --depth=1 https://github.com/tomxi1997/lxc-docker-support-for-android.git utils
+        git clone -q --depth=1 https://github.com/tomxi1997/lxc-docker-support-for-android.git android-kernel/utils
         if ! grep -q 'source "utils/Kconfig"' android-kernel/Kconfig; then
           echo 'source "utils/Kconfig"' >> android-kernel/Kconfig
         fi
@@ -66,12 +66,12 @@ jobs:
       if: env.ENABLE_LXC_DOCKER == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        chmod a+x utils/runcpatch.sh
+        chmod a+x android-kernel/utils/runcpatch.sh
         if [ -f android-kernel/kernel/cgroup.c ]; then
-        ./utils/runcpatch.sh android-kernel/kernel/cgroup.c               
+        ./android-kernel/utils/runcpatch.sh android-kernel/kernel/cgroup.c               
         fi
         if [ -f android-kernel/kernel/cgroup/cgroup.c ]; then
-        ./utils/runcpatch.sh android-kernel/kernel/cgroup/cgroup.c               
+        ./android-kernel/utils/runcpatch.sh android-kernel/kernel/cgroup/cgroup.c               
         fi
         
     - name: 配置 ksu
