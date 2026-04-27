@@ -17,13 +17,10 @@ jobs:
           cat config.env | grep KERNEL_SOURCE_BRANCH= >> $GITHUB_ENV
           cat config.env | grep KERNEL_CONFIG= >> $GITHUB_ENV
           cat config.env | grep KERNEL_ZIP_NAME= >> $GITHUB_ENV
-          cat config.env | grep LLVM_CONFIG= >> $GITHUB_ENV
           cat config.env | grep ENABLE_KERNELSU= >> $GITHUB_ENV
           cat config.env | grep KERNELSU_TAG= >> $GITHUB_ENV
           cat config.env | grep ENABLE_KVM= >> $GITHUB_ENV
           cat config.env | grep ENABLE_LXC_DOCKER= >> $GITHUB_ENV
-          cat config.env | grep ENABLE_KERNELSU= >> $GITHUB_ENV
-          cat config.env | grep KERNELSU_TAG= >> $GITHUB_ENV
 
       - name: 构建编译内核环境
         run: |
@@ -31,11 +28,10 @@ jobs:
           sudo -E apt-get -y -qq install git make bc bison ccache openssl zip kmod cpio flex libelf-dev curl libssl-dev libtfm-dev wget device-tree-compiler ca-certificates python3 binutils binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi
           mkdir -p $GITHUB_WORKSPACE/kernel_workspace
 
-      - name: 下载Clang-aosp编译器
+      - name: 安装GCC交叉编译工具链
         run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace
-          mkdir clang-aosp
-          git clone -q --depth=1 --single-branch https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 -b android13-release clang-aosp
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: 下载内核源码
         run: |
@@ -78,15 +74,15 @@ jobs:
       - name: 开始编译内核
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/clang-r450784d/bin:$PATH
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KBUILD_BUILD_HOST=17
           export KBUILD_BUILD_USER=HyperPower
-          make -s -j$(nproc --all) O=out ARCH=arm64 ${{ env.KERNEL_CONFIG }}
-          if [ "${{ env.LLVM_CONFIG }}" = "y" ]; then
-            make -j$(nproc --all) CC="ccache clang" O=out ARCH=arm64 CLANG_TRIPLE="aarch64-linux-gnu-" CROSS_COMPILE="aarch64-linux-gnu-" CROSS_COMPILE_ARM32="arm-linux-gnueabi-" LLVM=1 LLVM_IAS=1
-          else
-            make -j$(nproc --all) CC="ccache clang" O=out ARCH=arm64 CLANG_TRIPLE="aarch64-linux-gnu-" CROSS_COMPILE="aarch64-linux-gnu-" CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
-          fi
+          
+          # 使用GCC编译
+          make -s -j$(nproc --all) O=out ${{ env.KERNEL_CONFIG }}
+          make -j$(nproc --all) O=out
 
       - name: 准备打包内核
         run: |
