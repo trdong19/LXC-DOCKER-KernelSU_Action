@@ -140,31 +140,8 @@ jobs:
 
           # 3. 执行
           chmod +x add-lxc-docker-custom.sh
-          ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/sagit_defconfig
-                
-                if [ ! -f "$DEFCONFIG" ]; then
-                    echo "❌ 错误: 找不到内核配置文件 $DEFCONFIG"
-                    exit 1
-                fi
-                if [ ! -f "$DOCKER_TXT" ]; then
-                    echo "❌ 错误: 找不到 Docker 配置列表 $DOCKER_TXT"
-                    exit 1
-                fi
-                
-                echo "✅ 正在追加配置到 $DEFCONFIG ..."
-                while IFS= read -r line; do
-                    trimmed="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-                    [ -z "$trimmed" ] && continue
-                    echo "$trimmed" >> "$DEFCONFIG"
-                done < "$DOCKER_TXT"
-                
-                echo "# CONFIG_ANDROID_PARANOID_NETWORK is not set" >> "$DEFCONFIG"
-                echo "🎉 所有 Docker/LXC 配置及网络限制解除已追加完成"
-                SCRIPT_EOF
-
-                # 3. 运行
-                chmod +x add-lxc-docker-custom.sh
-                ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+          ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+     
 
       - name: 添加runc补丁
         run: |
