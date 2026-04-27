@@ -47,7 +47,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
 
-          # 1. 创建配置列表文件（直接在 Actions 环境中生成）
+          # 1. 生成配置文件（已移除 AppArmor）
           cat > sagit_docker.txt << 'TXT_EOF'
           CONFIG_PID_NS=y
           CONFIG_IPC_NS=y
@@ -100,7 +100,6 @@ jobs:
           CONFIG_NFT_MASQ=y
           CONFIG_NFT_NAT=y
           CONFIG_SECURITY=y
-          CONFIG_SECURITY_APPARMOR=y
           CONFIG_BTRFS_FS=y
           CONFIG_BTRFS_FS_POSIX_ACL=y
           CONFIG_EXT4_FS_POSIX_ACL=y
@@ -112,7 +111,7 @@ jobs:
           CONFIG_FSNOTIFY=y
           TXT_EOF
 
-          # 2. 创建执行脚本
+          # 2. 生成执行脚本
           cat > add-lxc-docker-custom.sh << 'SCRIPT_EOF'
           #!/bin/bash
           set -e
@@ -139,9 +138,33 @@ jobs:
           echo "🎉 所有 Docker/LXC 配置及网络限制解除已追加完成"
           SCRIPT_EOF
 
-          # 3. 运行
+          # 3. 执行
           chmod +x add-lxc-docker-custom.sh
           ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+                
+                if [ ! -f "$DEFCONFIG" ]; then
+                    echo "❌ 错误: 找不到内核配置文件 $DEFCONFIG"
+                    exit 1
+                fi
+                if [ ! -f "$DOCKER_TXT" ]; then
+                    echo "❌ 错误: 找不到 Docker 配置列表 $DOCKER_TXT"
+                    exit 1
+                fi
+                
+                echo "✅ 正在追加配置到 $DEFCONFIG ..."
+                while IFS= read -r line; do
+                    trimmed="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+                    [ -z "$trimmed" ] && continue
+                    echo "$trimmed" >> "$DEFCONFIG"
+                done < "$DOCKER_TXT"
+                
+                echo "# CONFIG_ANDROID_PARANOID_NETWORK is not set" >> "$DEFCONFIG"
+                echo "🎉 所有 Docker/LXC 配置及网络限制解除已追加完成"
+                SCRIPT_EOF
+
+                # 3. 运行
+                chmod +x add-lxc-docker-custom.sh
+                ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
 
       - name: 添加runc补丁
         run: |
