@@ -99,22 +99,43 @@ jobs:
           rm -rf AnyKernel3/.git* AnyKernel3/README.md
           rm -rf AnyKernel3/ramdisk AnyKernel3/modules AnyKernel3/patch
 
-      - name: 生成boot.img
+      - name: 生成boot.img（小米6专用）
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
           # 下载boot.img制作工具
-          wget https://github.com/osm0sis/Android-Image-Kitchen/archive/refs/heads/master.zip -O AIK-master.zip
-          unzip AIK-master.zip
+          git clone https://github.com/osm0sis/Android-Image-Kitchen AIK
           
-          # 复制内核镜像到工具目录
-          cp android-kernel/out/arch/arm64/boot/Image.gz-dtb Android-Image-Kitchen-master/split_img/
+          # 下载小米6原始boot.img作为模板（需要您提供正确的链接）
+          wget https://example.com/sagit_stock_boot.img -O stock_boot.img
           
-          # 生成boot.img（这里需要根据您的设备调整参数）
-          cd Android-Image-Kitchen-master
+          # 解包原始boot.img
+          cd AIK
+          ./unpackimg.sh ../stock_boot.img
+          
+          # 替换内核镜像
+          cp ../android-kernel/out/arch/arm64/boot/Image.gz-dtb split_img/
+          
+          # 重新打包boot.img（小米6参数）
           ./repackimg.sh
           
           # 复制生成的boot.img到工作目录
-          cp image-new.img $GITHUB_WORKSPACE/kernel_workspace/boot.img
+          cp image-new.img ../boot.img
+          
+          # 备用方案：如果上面的方法失败，使用mkbootimg
+          cd ..
+          if [ ! -f boot.img ]; then
+            git clone https://github.com/osm0sis/mkbootimg
+            cd mkbootimg
+            ./unpackbootimg -i ../stock_boot.img
+            ./mkbootimg --kernel ../android-kernel/out/arch/arm64/boot/Image.gz-dtb \
+                        --ramdisk boot.img-ramdisk.gz \
+                        --cmdline "$(cat boot.img-cmdline)" \
+                        --base 0x80000000 \
+                        --pagesize 4096 \
+                        --ramdisk_offset 0x01000000 \
+                        --tags_offset 0x00000100 \
+                        --output ../boot.img
+          fi
 
       - name: 上传boot.img
         uses: actions/upload-artifact@v4
