@@ -2,6 +2,7 @@
 # Automatically generated file; DO NOT EDIT.
 # Linux/arm64 4.4.302 Kernel Configuration
 #
+CONFIG_BRIDGE_VLAN_FILTERING=y
 CONFIG_VXLAN=y
 CONFIG_MACVLAN=y
 CONFIG_IPVLAN=y
@@ -785,7 +786,7 @@ CONFIG_NF_NAT_IRC=y
 # CONFIG_NF_NAT_SIP is not set
 CONFIG_NF_NAT_TFTP=y
 CONFIG_NF_NAT_REDIRECT=y
-# CONFIG_NF_TABLES is not set
+CONFIG_NF_TABLES=y
 CONFIG_NETFILTER_XTABLES=y
 
 #
@@ -1009,7 +1010,7 @@ CONFIG_BRIDGE_EBT_BROUTE=y
 # CONFIG_BRIDGE_EBT_LOG is not set
 # CONFIG_BRIDGE_EBT_NFLOG is not set
 # CONFIG_IP_DCCP is not set
-# CONFIG_IP_SCTP is not set
+CONFIG_IP_SCTP=y
 # CONFIG_RDS is not set
 # CONFIG_TIPC is not set
 # CONFIG_ATM is not set
@@ -1542,9 +1543,6 @@ CONFIG_WIREGUARD=y
 # CONFIG_NET_FC is not set
 # CONFIG_IFB is not set
 # CONFIG_NET_TEAM is not set
-# CONFIG_MACVLAN is not set
-# CONFIG_IPVLAN is not set
-# CONFIG_VXLAN is not set
 # CONFIG_GENEVE is not set
 # CONFIG_NETCONSOLE is not set
 # CONFIG_NETPOLL is not set
