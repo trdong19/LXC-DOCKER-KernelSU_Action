@@ -37,6 +37,14 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel --depth=1
+          
+      - name: 复制Docker配置到内核源码
+        run: |
+          cd $GITHUB_WORKSPACE/kernel_workspace
+          # 复制sagit_docker_defconfig到内核配置目录
+          cp $GITHUB_WORKSPACE/sagit_docker_defconfig android-kernel/arch/arm64/configs/
+          # 修改KERNEL_CONFIG环境变量为docker配置
+          echo "KERNEL_CONFIG=sagit_docker_defconfig" >> $GITHUB_ENV
 
       - name: 添加runc补丁
         run: |
