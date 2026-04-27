@@ -88,9 +88,9 @@ jobs:
           export KBUILD_BUILD_HOST=17
           export KBUILD_BUILD_USER=HyperPower
           
-          # 使用GCC编译（同时忽略特定 Werror 报错）
           make -s -j$(nproc --all) O=out ${{ env.KERNEL_CONFIG }}
-          make -j$(nproc --all) O=out KCFLAGS="-Wno-error=address -Wno-error=array-compare"
+          make -j$(nproc --all) O=out \
+            KCFLAGS="-Wno-error=address -Wno-error=array-compare -Wno-error=dangling-pointer"
 
       - name: 准备打包内核
         run: |
