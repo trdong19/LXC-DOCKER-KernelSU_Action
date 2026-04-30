@@ -84,7 +84,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
 
-          cat > docker_config.txt << 'EOF'
+          cat > docker_config.txt << 'TXT_EOF'
               # ---------- 必备 namespace ----------
               CONFIG_NAMESPACES=y
               CONFIG_UTS_NS=y
@@ -193,7 +193,7 @@ jobs:
               # ---------- 存储驱动支持 ----------
               CONFIG_BLK_DEV_DM=y
               CONFIG_DM_THIN_PROVISIONING=y
-              EOF
+              TXT_EOF
 
       # =========================
       # 8️⃣ 内核配置（修正致命错误：补上 cat）
