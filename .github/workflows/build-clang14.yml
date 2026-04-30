@@ -196,7 +196,7 @@ jobs:
               TXT_EOF
 
       # =========================
-      # 8️⃣ 内核配置（修正致命错误：补上 cat）
+      # 8️⃣ 内核配置（使用可靠的配置合并方式）
       # =========================
       - name: Configure kernel
         run: |
@@ -208,9 +208,16 @@ jobs:
           # 载入原始 defconfig
           make O=out ARCH=arm64 ${{ env.KERNEL_CONFIG }}
 
-          # 如果存在 docker_config.txt 才合并（避免步骤跳过时报错）
+          # 如果存在 docker_config.txt，使用可靠方式合并（覆盖原有配置）
           if [ -f ../docker_config.txt ]; then
-            cat ../docker_config.txt >> out/.config
+            while read -r line; do
+              if [[ "$line" =~ ^#.* || -z "$line" ]]; then
+                continue
+              fi
+              config_name=$(echo "$line" | cut -d'=' -f1)
+              sed -i "/^$config_name/d" out/.config
+              echo "$line" >> out/.config
+            done < ../docker_config.txt
           fi
 
           # 补齐所有依赖选项
