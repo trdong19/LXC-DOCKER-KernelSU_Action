@@ -225,32 +225,29 @@ jobs:
           max-size: 2G
 
       # =========================
-      # 🔟 编译内核
+      # 🔟 编译内核（带日志保存）
       # =========================
       - name: Build kernel
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
 
-          # 添加 clang 与 ccache 到 PATH
           export PATH="$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/clang-r450784d/bin:$PATH"
           export KBUILD_BUILD_HOST=CI
           export KBUILD_BUILD_USER=MI6
 
           if [ "${{ env.LLVM_CONFIG }}" = "y" ]; then
-            # 全 LLVM 模式（Clang 编译 + 内置汇编/链接）
             make -j$(nproc --all) O=out ARCH=arm64 \
               CC="ccache clang" \
               LLVM=1 LLVM_IAS=1 \
               CLANG_TRIPLE="aarch64-linux-gnu-" \
               CROSS_COMPILE="aarch64-linux-gnu-" \
-              CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+              CROSS_COMPILE_ARM32="arm-linux-gnueabi-" 2>&1 | tee build.log
           else
-            # 混合模式：使用 Clang 编译 + GNU 汇编/链接
             make -j$(nproc --all) O=out ARCH=arm64 \
               CC="ccache clang" \
               CLANG_TRIPLE="aarch64-linux-gnu-" \
               CROSS_COMPILE="aarch64-linux-gnu-" \
-              CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+              CROSS_COMPILE_ARM32="arm-linux-gnueabi-" 2>&1 | tee build.log
           fi
 
       # =========================
@@ -259,24 +256,29 @@ jobs:
       - name: Pack kernel
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-
-          # 拉取 AnyKernel3 模板
           git clone https://github.com/osm0sis/AnyKernel3
-
-          # 使用环境变量指定的镜像文件名，若未设置则默认 Image.gz-dtb
           IMAGE_FILE="${{ env.KERNEL_IMAGE_NAME }}"
           if [ -z "$IMAGE_FILE" ]; then
             IMAGE_FILE="Image.gz-dtb"
           fi
-
           cp android-kernel/out/arch/arm64/boot/${IMAGE_FILE} AnyKernel3/
           rm -rf AnyKernel3/.git*
 
       # =========================
-      # 12️⃣ 上传制品
+      # 12️⃣ 上传内核包
       # =========================
-      - name: Upload
+      - name: Upload kernel zip
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.KERNEL_ZIP_NAME }}
           path: kernel_workspace/AnyKernel3/*
+
+      # =========================
+      # 13️⃣ 上传编译日志
+      # =========================
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-build-log
+          path: kernel_workspace/android-kernel/build.log
+          if-no-files-found: warn
