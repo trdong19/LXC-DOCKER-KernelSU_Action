@@ -16,7 +16,7 @@ jobs:
       # =========================
       - name: Load config
         run: |
-          cat config.env >> $GITHUB_ENV
+          grep -v '^#' config.env | grep -v '^$' >> $GITHUB_ENV
 
       # =========================
       # 2️⃣ 安装依赖
