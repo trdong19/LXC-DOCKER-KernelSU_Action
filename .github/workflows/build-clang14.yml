@@ -193,6 +193,7 @@ jobs:
               # ---------- 存储驱动支持（禁用可能冲突的选项）----------
               # CONFIG_BLK_DEV_DM is not set
               # CONFIG_DM_THIN_PROVISIONING is not set
+              # CONFIG_DM_REQ_CRYPT is not set
               TXT_EOF
 
       # =========================
