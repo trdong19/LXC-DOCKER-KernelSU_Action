@@ -279,12 +279,39 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone https://github.com/osm0sis/AnyKernel3
+
+          # AnyKernel 小米6设备适配
+          cd AnyKernel3
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+          sed -i 's!block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot;!block=/dev/block/bootdevice/by-name/boot;!g' anykernel.sh
+          sed -i 's/is_slot_device=1;/is_slot_device=0;/g' anykernel.sh
+          sed -i 's/device.name1=maguro/device.name1=sagit/g' anykernel.sh
+          sed -i 's/device.name2=toro/device.name2=/g' anykernel.sh
+          sed -i 's/device.name3=toroplus/device.name3=/g' anykernel.sh
+          sed -i 's/device.name4=tuna/device.name4=/g' anykernel.sh
+
+          # 移除 Galaxy Nexus 平台的 ramdisk 补丁（不适用于小米6）
+          sed -i '/init.tuna.rc/d' anykernel.sh
+          sed -i '/fstab.tuna/d' anykernel.sh
+          sed -i '/replace_string init.rc/d' anykernel.sh
+          sed -i '/insert_line init.tuna/d' anykernel.sh
+          sed -i '/patch_fstab fstab.tuna/d' anykernel.sh
+          sed -i '/append_file init.tuna/d' anykernel.sh
+          sed -i '/append_file fstab.tuna/d' anykernel.sh
+          sed -i '/bootscript/d' anykernel.sh
+          sed -i '/usbdisk/d' anykernel.sh
+          cd ..
+
+          # 复制内核镜像
           IMAGE_FILE="${{ env.KERNEL_IMAGE_NAME }}"
           if [ -z "$IMAGE_FILE" ]; then
             IMAGE_FILE="Image.gz-dtb"
           fi
           cp android-kernel/out/arch/arm64/boot/${IMAGE_FILE} AnyKernel3/
-          rm -rf AnyKernel3/.git*
+
+          # 清理不需要的文件
+          rm -rf AnyKernel3/.git* AnyKernel3/README.md
+          rm -rf AnyKernel3/ramdisk AnyKernel3/modules AnyKernel3/patch
 
       # =========================
       # 12️⃣ 上传内核包
