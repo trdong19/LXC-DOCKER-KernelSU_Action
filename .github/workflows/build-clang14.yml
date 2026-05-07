@@ -212,12 +212,26 @@ jobs:
           # 如果存在 docker_config.txt，使用可靠方式合并（覆盖原有配置）
           if [ -f ../docker_config.txt ]; then
             while read -r line; do
-              if [[ "$line" =~ ^#.* || -z "$line" ]]; then
+              # 跳过空行和纯注释，但处理 "# CONFIG_XXX is not set" 类型
+              if [ -z "$line" ]; then
                 continue
               fi
-              config_name=$(echo "$line" | cut -d'=' -f1)
-              sed -i "/^$config_name/d" out/.config
-              echo "$line" >> out/.config
+              if [[ "$line" =~ ^#[[:space:]]CONFIG_ ]]; then
+                # "# CONFIG_XXX is not set" 格式
+                config_name=$(echo "$line" | sed 's/^# *//;s/ *is not set//')
+                sed -i "/^${config_name}=.*$/d" out/.config
+                sed -i "/^# ${config_name} is not set$/d" out/.config
+                echo "$line" >> out/.config
+              elif [[ "$line" =~ ^# ]]; then
+                # 纯注释行，跳过
+                continue
+              else
+                # CONFIG_XXX=y 格式
+                config_name=$(echo "$line" | cut -d'=' -f1)
+                sed -i "/^${config_name}=.*$/d" out/.config
+                sed -i "/^# ${config_name} is not set$/d" out/.config
+                echo "$line" >> out/.config
+              fi
             done < ../docker_config.txt
           fi
 
