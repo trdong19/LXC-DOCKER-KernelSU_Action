@@ -49,21 +49,20 @@ jobs:
       if: env.ENABLE_LXC_DOCKER == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        wget https://github.com/fate-think/LXC-DOCKER-KernelSU_Action/releases/download/1.0.0/add-lxc-docker-custom.sh
-        chmod 755 add-lxc-docker-custom.sh
-        ./add-lxc-docker-custom.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
-        echo "# CONFIG_ANDROID_PARANOID_NETWORK is not set" >> android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
+        cp $GITHUB_WORKSPACE/LXC-DOCKER-KernelSU_Action/add-lxc-docker-kernel-config.sh .
+        chmod 755 add-lxc-docker-kernel-config.sh
+        ./add-lxc-docker-kernel-config.sh android-kernel/arch/arm64/configs/${{ env.KERNEL_CONFIG }}
 
     - name: 添加runc补丁
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        wget https://github.com/fate-think/LXC-DOCKER-KernelSU_Action/releases/download/1.0.0/runcpatch.sh
+        cp $GITHUB_WORKSPACE/LXC-DOCKER-KernelSU_Action/runcpatch.sh .
         chmod a+x runcpatch.sh
         if [ -f android-kernel/kernel/cgroup.c ]; then
-        ./runcpatch.sh android-kernel/kernel/cgroup.c               
+        ./runcpatch.sh android-kernel/kernel/cgroup.c
         fi
         if [ -f android-kernel/kernel/cgroup/cgroup.c ]; then
-        ./runcpatch.sh android-kernel/kernel/cgroup/cgroup.c               
+        ./runcpatch.sh android-kernel/kernel/cgroup/cgroup.c
         fi
     
     - name: 修复clang18部分
@@ -108,6 +107,27 @@ jobs:
         make -j$(nproc --all) CC="ccache clang" CXX=clang++ O=out ARCH=arm64 CLANG_TRIPLE="aarch64-linux-gnu-" CROSS_COMPILE="aarch64-linux-gnu-" CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
         fi
                 
+    - name: 验证Docker内核配置
+      if: env.ENABLE_LXC_DOCKER == 'true'
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+        echo "=== Docker关键内核配置检查 ==="
+        FAIL=0
+        for opt in OVERLAY_FS VETH BRIDGE MEMCG CGROUP_PIDS CPUSETS BLK_CGROUP AUDIT USER_NS NET_NS BPF_SYSCALL SECCOMP IP_VS NETFILTER_XT_MATCH_CONNTRACK NF_NAT MACVLAN; do
+          val=$(grep "^CONFIG_${opt}=" out/.config 2>/dev/null || echo "NOT_SET")
+          if echo "$val" | grep -q "=y$\|=m$"; then
+            echo "  OK: $val"
+          else
+            echo "  MISSING: CONFIG_${opt}"
+            FAIL=1
+          fi
+        done
+        if [ $FAIL -eq 1 ]; then
+          echo "警告: 部分Docker关键配置缺失"
+        else
+          echo "所有Docker关键配置已启用"
+        fi
+
     - name: 准备打包内核
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
